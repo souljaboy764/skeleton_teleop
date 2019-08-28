@@ -6,10 +6,10 @@
                 "limitSymbolsToIncludedHeaders": true
             },
             "includePath": [
-                "/home/corobi/aura_ws/devel/include/**",
-                "/opt/ros/melodic/include/**",
-                "/home/corobi/aura_ws/src/skeleton_teleop/include/**",
-                "/usr/include/**"
+                "/usr/include/**",
+                "${workspaceFolder}/**",
+                "${workspaceFolder}/../../devel/include/*",
+                "/opt/ros/melodic/include/**"
             ],
             "name": "ROS",
             "intelliSenseMode": "gcc-x64",

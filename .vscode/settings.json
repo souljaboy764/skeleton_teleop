@@ -1,8 +1,4 @@
 {
-    "python.autoComplete.extraPaths": [
-        "/home/corobi/aura_ws/devel/lib/python2.7/dist-packages",
-        "/opt/ros/melodic/lib/python2.7/dist-packages"
-    ],
     "files.associations": {
         "cmath": "cpp",
         "complex": "cpp"
