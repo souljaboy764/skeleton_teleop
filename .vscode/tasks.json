@@ -3,13 +3,12 @@
         {
             "type": "shell",
             "label": "catkin_make build active package",
-            "command": "catkin_make",
+            "command": "catkin_make --pkg skeleton_teleop",
             "args": [
                 // "-g",
                 // "${file}",
                 // "-o",
                 // "${fileDirname}/${fileBasenameNoExtension}"
-                "--pkg skeleton_teleop"
             ],
             "options": {
                 "cwd": "${workspaceFolder}/../.."

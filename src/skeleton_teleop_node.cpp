@@ -16,30 +16,48 @@
 #include <tf2/impl/convert.h>
 
 #include <iostream>
+#include <algorithm>
 
 #include "skeleton_teleop/helper.h"
 
+#include <signal.h>
+
 using namespace std;
 
-#define Vector(a, b) tf2::Vector3(b.x - a.x, b.y - a.y, b.z - a.z)
+#define clamp(n, lo, hi) n = max(lo, min(n, hi));
+
+ros::Publisher axlCmdPub;
+aura_msgs::AxleCommand cmd;
+
+void mySigintHandler(int sig)
+{
+	ROS_INFO("SHUTDOWN CALLED!!!!");
+	for(int i=0;i<50;i++)
+		cmd.axles[i] = -1;
+	
+	axlCmdPub.publish(cmd);
+	ros::shutdown();
+}
+
+
 
 int main(int argc, char *argv[])
 {
-	ros::init(argc, argv, "skeleton_teleop");
+	ros::init(argc, argv, "skeleton_teleop",  ros::init_options::NoSigintHandler);
 	ros::NodeHandle nh;
 	
-	tf2_ros::Buffer tfBuffer;
-	tf2_ros::TransformListener tfListener(tfBuffer);
-	ros::Rate r(10);
-
-	aura_msgs::AxleCommand cmd;
 	cmd.header.seq = 0;
 	cmd.delay = 100;
 	cmd.priority = 800;
 	for(int i=0;i<50;i++)
 		cmd.axles[i] = -1;
 
-	ros::Publisher axlCmdPub = nh.advertise<aura_msgs::AxleCommand>("/motion/axlecommand", 1000);
+	axlCmdPub = nh.advertise<aura_msgs::AxleCommand>("/motion/axlecommand", 1000);
+	signal(SIGINT, mySigintHandler);
+
+	tf2_ros::Buffer tfBuffer;
+	tf2_ros::TransformListener tfListener(tfBuffer);
+	ros::Rate r(10);
 
 	while (nh.ok())
 	{
@@ -160,6 +178,7 @@ int main(int argc, char *argv[])
 			leftYaw *= 180/M_PI;
 			leftPitch *= 180/M_PI;
 			leftRoll *= 180/M_PI;
+			leftElbowAngle *= 180/M_PI;
 
 			if (tf2::tf2Dot(topView, leftUpperArm) >=0)
 			{
@@ -175,9 +194,19 @@ int main(int argc, char *argv[])
 				}
 			}
 			
- 
+			cmd.axles[LeftShoulderYaw] = (int16_t)leftYaw*10;
+			cmd.axles[LeftShoulderPitch] = (int16_t)leftPitch*10 + 150;
+			cmd.axles[LeftShoulderRoll] = (int16_t)(leftRoll*10 + 900)/2;
+			cmd.axles[LeftElbow] = (int16_t)leftElbowAngle*10;
 
-			// ROS_INFO("LEFT ANGLES: %.3f %.3f %.3f %.3f",leftYaw, leftPitch, leftRoll+90, leftElbowAngle*180/M_PI);
+			// clamp(cmd.axles[LeftShoulderYaw], (int16_t)0, (int16_t)250);
+			// clamp(cmd.axles[LeftShoulderPitch], (int16_t)0, (int16_t)800);
+			// clamp(cmd.axles[LeftShoulderRoll], (int16_t)0, (int16_t)900);
+			// clamp(cmd.axles[LeftElbow], (int16_t)0, (int16_t)900);
+
+			// cmd.axles[LeftShoulderRoll] = 900 - cmd.axles[LeftShoulderRoll];
+
+			ROS_INFO("LEFT ANGLES: %03d %03d %03d %03d",cmd.axles[LeftShoulderYaw], cmd.axles[LeftShoulderPitch], cmd.axles[LeftShoulderRoll], cmd.axles[LeftElbow]);
 			
 			////////////////////////////////////////////////////////////////////////////////////////
 			//										Right Arm									  //
@@ -219,7 +248,7 @@ int main(int argc, char *argv[])
 			
 			//This is a check which sign the angle has as the calculation only produces positive angles
 			tf2::Matrix3x3 rightRotationAroundArm;
-			rightRotationAroundArm.setEulerYPR(0, rightRoll, 0);
+			rightRotationAroundArm.setEulerYPR(0, -rightRoll, 0);
 			tf2::Vector3 rightShouldBeWristPos = rightRotationAroundX*(rightRotationAroundZ*(rightRotationAroundArm*(rightElbowRotation*rightUnderArmInZeroPos)));
 			double r1 = tf2::tf2Distance(rightUnderArm, rightShouldBeWristPos);
 			// double l1 = sqrt((rightUnderArm.x() - rightShouldBeWristPos.x())*(rightUnderArm.x() - rightShouldBeWristPos.x()) + (rightUnderArm.y() - rightShouldBeWristPos.y())*(rightUnderArm.y() - rightShouldBeWristPos.y()) + (rightUnderArm.z() - rightShouldBeWristPos.z())*(rightUnderArm.z() - rightShouldBeWristPos.z()));
@@ -229,7 +258,10 @@ int main(int argc, char *argv[])
 			r1 = tf2::tf2Distance(rightUnderArm, rightShouldBeWristPos);
 			// l1 = sqrt((rightUnderArm.x() - rightShouldBeWristPos.x())*(rightUnderArm.x() - rightShouldBeWristPos.x()) + (rightUnderArm.y() - rightShouldBeWristPos.y())*(rightUnderArm.y() - rightShouldBeWristPos.y()) + (rightUnderArm.z() - rightShouldBeWristPos.z())*(rightUnderArm.z() - rightShouldBeWristPos.z()));
 			if (r1 < r1saver)
+			{
+				ROS_INFO("GOING HERE");
 				rightRoll = -rightRoll;
+			}
 			
 			//As there are some singularities or inaccessible areas in the kinematic structure, 
 			//this smoothes these areas out or removes them 
@@ -237,6 +269,8 @@ int main(int argc, char *argv[])
 			rightPitch *= 180/M_PI;
 			rightRoll *= 180/M_PI;
 			rightElbowAngle *= 180/M_PI;
+
+			rightRoll += 90;
 
 			if (tf2::tf2Dot(topView, rightUpperArm) >=0)
 			{
@@ -251,22 +285,24 @@ int main(int argc, char *argv[])
 					rightPitch = -comparer/15*90;
 				}
 			}
-			
- 
 
 			cmd.axles[RightShoulderYaw] = (int16_t)rightYaw*10;
-			cmd.axles[RightShoulderPitch] = (int16_t)rightPitch*10 + 15;
+			cmd.axles[RightShoulderPitch] = (int16_t)rightPitch*10 + 150;
 			cmd.axles[RightShoulderRoll] = (int16_t)rightRoll*10;
 			cmd.axles[RightElbow] = (int16_t)rightElbowAngle*10;
 
-			// ROS_INFO("RIGHT ANGLES: %.3f %.3f %.3f %.3f",rightYaw, rightPitch+15, rightRoll, rightElbowAngle*180/M_PI);
+			clamp(cmd.axles[RightShoulderYaw], (int16_t)0, (int16_t)250);
+			clamp(cmd.axles[RightShoulderPitch], (int16_t)0, (int16_t)800);
+			clamp(cmd.axles[RightShoulderRoll], (int16_t)0, (int16_t)900);
+			clamp(cmd.axles[RightElbow], (int16_t)0, (int16_t)900);
 
-			ROS_INFO("RIGHT ANGLES: %03d %03d %03d %03d",cmd.axles[RightShoulderYaw], cmd.axles[RightShoulderPitch], cmd.axles[RightShoulderRoll], cmd.axles[RightElbow]);
+			cmd.axles[RightShoulderRoll] = 900 - cmd.axles[RightShoulderRoll];
+
+			// ROS_INFO("RIGHT ANGLES: %03d %03d %03d %03d",cmd.axles[RightShoulderYaw], cmd.axles[RightShoulderPitch], cmd.axles[RightShoulderRoll], cmd.axles[RightElbow]);
 			
 			
 			axlCmdPub.publish(cmd);
-
-			r.sleep();	
+			r.sleep();
 		}
 		catch (tf2::TransformException &ex) 
 		{
