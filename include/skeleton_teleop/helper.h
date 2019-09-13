@@ -21,12 +21,12 @@ using namespace std;
 //TFs and joint names for NuiTrack
 #define TRACKING_NUITRACK 0
 enum {camera, joint_head, joint_neck, joint_torso, joint_waist, joint_left_shoulder, joint_left_elbow, joint_left_hand, joint_right_shoulder, joint_right_elbow, joint_right_hand, joint_left_hip, joint_left_knee, joint_left_ankle, joint_right_hip, joint_right_knee, joint_right_ankle};
-vector<string> nui_joint_names({"perception_nui_1", "perception_nui_1_1_head", "perception_nui_1_1_neck", "perception_nui_1_1_torso", "perception_nui_1_1_waist", "perception_nui_1_1_left_shoulder", "perception_nui_1_1_left_elbow", "perception_nui_1_1_left_hand", "perception_nui_1_1_right_shoulder", "perception_nui_1_1_right_elbow", "perception_nui_1_1_right_hand", "perception_nui_1_1_left_hip", "perception_nui_1_1_left_knee", "perception_nui_1_1_left_ankle", "perception_nui_1_1_right_hip", "perception_nui_1_1_right_knee", "perception_nui_1_1_right_ankle"});
+vector<string> nui_joint_names({"perception_nui_1", "head", "neck", "torso", "waist", "left_shoulder", "left_elbow", "left_hand", "right_shoulder", "right_elbow", "right_hand", "left_hip", "left_knee", "left_ankle", "right_hip", "right_knee", "right_ankle"});
 
 //TFs and joint names for Kinect
 #define TRACKING_KINECT 1
 enum {SPINEBASE, SPINEMID, NECK, HEAD, SHOULDERLEFT, ELBOWLEFT, WRISTLEFT, HANDLEFT, SHOULDERRIGHT, ELBOWRIGHT, WRISTRIGHT, HANDRIGHT, HIPLEFT, KNEELEFT, ANKLELEFT, FOOTLEFT, HIPRIGHT, KNEERIGHT, ANKLERIGHT, FOOTRIGHT, SPINESHOULDER, HANDTIPLEFT , THUMBLEFT, HANDTIPRIGHT, THUMBRIGHT, CAMERA};
-vector<string> kinect_joint_names({"SPINEBASE", "SPINEMID", "NECK", "HEAD", "SHOULDERLEFT", "ELBOWLEFT", "WRISTLEFT", "HANDLEFT", "SHOULDERRIGHT", "ELBOWRIGHT", "WRISTRIGHT", "HANDRIGHT", "HIPLEFT", "KNEELEFT", "ANKLELEFT", "FOOTLEFT", "HIPRIGHT", "KNEERIGHT", "ANKLERIGHT", "FOOTRIGHT", "SPINESHOULDER", "HANDTIPLEFT", "THUMBLEFT", "HANDTIPRIGHT", "THUMBRIGHT", "CAMERA"});
+vector<string> kinect_joint_names({"SPINEBASE", "SPINEMID", "NECK", "HEAD", "SHOULDERLEFT", "ELBOWLEFT", "WRISTLEFT", "HANDLEFT", "SHOULDERRIGHT", "ELBOWRIGHT", "WRISTRIGHT", "HANDRIGHT", "HIPLEFT", "KNEELEFT", "ANKLELEFT", "FOOTLEFT", "HIPRIGHT", "KNEERIGHT", "ANKLERIGHT", "FOOTRIGHT", "SPINESHOULDER", "HANDTIPLEFT", "THUMBLEFT", "HANDTIPRIGHT", "THUMBRIGHT", "camera"});
 
 enum {LeftShoulderPitch=23, LeftShoulderYaw, LeftShoulderRoll, LeftElbow, RightShoulderPitch=37, RightShoulderYaw, RightShoulderRoll, RightElbow};
 

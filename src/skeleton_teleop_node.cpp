@@ -60,18 +60,18 @@ int main(int argc, char *argv[])
 
 	if(argc==2 and string(argv[1])=="kinect")
 		tracking_type = TRACKING_KINECT;
-
+	string prefix = (tracking_type == TRACKING_NUITRACK) ? "perception_nui_1_1_" : "nturgbd_skeleton_1_"
 	string camera_frame = (tracking_type == TRACKING_NUITRACK) ? nui_joint_names[camera] : kinect_joint_names[CAMERA];
 
-	string waist_frame = (tracking_type == TRACKING_NUITRACK) ? nui_joint_names[joint_waist] : kinect_joint_names[SPINEBASE];
+	string waist_frame = prefix + (tracking_type == TRACKING_NUITRACK) ? nui_joint_names[joint_waist] : kinect_joint_names[SPINEBASE];
 
-	string right_shoulder_frame = (tracking_type == TRACKING_NUITRACK) ? nui_joint_names[joint_right_shoulder] : kinect_joint_names[SHOULDERRIGHT];
-	string right_elbow_frame = (tracking_type == TRACKING_NUITRACK) ? nui_joint_names[joint_right_elbow] : kinect_joint_names[ELBOWRIGHT];
-	string right_hand_frame = (tracking_type == TRACKING_NUITRACK) ? nui_joint_names[joint_right_hand] : kinect_joint_names[WRISTRIGHT];
+	string right_shoulder_frame = prefix + (tracking_type == TRACKING_NUITRACK) ? nui_joint_names[joint_right_shoulder] : kinect_joint_names[SHOULDERRIGHT];
+	string right_elbow_frame = prefix + (tracking_type == TRACKING_NUITRACK) ? nui_joint_names[joint_right_elbow] : kinect_joint_names[ELBOWRIGHT];
+	string right_hand_frame = prefix + (tracking_type == TRACKING_NUITRACK) ? nui_joint_names[joint_right_hand] : kinect_joint_names[WRISTRIGHT];
 
-	string left_shoulder_frame = (tracking_type == TRACKING_NUITRACK) ? nui_joint_names[joint_left_shoulder] : kinect_joint_names[SHOULDERLEFT];
-	string left_elbow_frame = (tracking_type == TRACKING_NUITRACK) ? nui_joint_names[joint_left_elbow] : kinect_joint_names[ELBOWLEFT];
-	string left_hand_frame = (tracking_type == TRACKING_NUITRACK) ? nui_joint_names[joint_left_hand] : kinect_joint_names[WRISTLEFT];
+	string left_shoulder_frame = prefix + (tracking_type == TRACKING_NUITRACK) ? nui_joint_names[joint_left_shoulder] : kinect_joint_names[SHOULDERLEFT];
+	string left_elbow_frame = prefix + (tracking_type == TRACKING_NUITRACK) ? nui_joint_names[joint_left_elbow] : kinect_joint_names[ELBOWLEFT];
+	string left_hand_frame = prefix + (tracking_type == TRACKING_NUITRACK) ? nui_joint_names[joint_left_hand] : kinect_joint_names[WRISTLEFT];
 
 
 	tf2_ros::Buffer tfBuffer;
