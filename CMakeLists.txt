@@ -111,7 +111,7 @@ find_package(catkin REQUIRED COMPONENTS
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES skeleton_teleop
-   CATKIN_DEPENDS aura_msgs geometry_msgs roscpp rospy std_msgs tf
+   CATKIN_DEPENDS aura_msgs geometry_msgs roscpp rospy std_msgs tf tf2_msgs
 #  DEPENDS system_lib
 )
 

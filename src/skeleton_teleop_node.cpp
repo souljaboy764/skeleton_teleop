@@ -16,6 +16,7 @@
 #include <tf2/impl/convert.h>
 
 #include <iostream>
+#include <string>
 #include <algorithm>
 
 #include "skeleton_teleop/helper.h"
@@ -55,6 +56,24 @@ int main(int argc, char *argv[])
 	axlCmdPub = nh.advertise<aura_msgs::AxleCommand>("/motion/axlecommand", 1000);
 	signal(SIGINT, mySigintHandler);
 
+	int tracking_type = TRACKING_NUITRACK;
+
+	if(argc==2 and string(argv[1])=="kinect")
+		tracking_type = TRACKING_KINECT;
+
+	string camera_frame = (tracking_type == TRACKING_NUITRACK) ? nui_joint_names[camera] : kinect_joint_names[CAMERA];
+
+	string waist_frame = (tracking_type == TRACKING_NUITRACK) ? nui_joint_names[joint_waist] : kinect_joint_names[SPINEBASE];
+
+	string right_shoulder_frame = (tracking_type == TRACKING_NUITRACK) ? nui_joint_names[joint_right_shoulder] : kinect_joint_names[SHOULDERRIGHT];
+	string right_elbow_frame = (tracking_type == TRACKING_NUITRACK) ? nui_joint_names[joint_right_elbow] : kinect_joint_names[ELBOWRIGHT];
+	string right_hand_frame = (tracking_type == TRACKING_NUITRACK) ? nui_joint_names[joint_right_hand] : kinect_joint_names[WRISTRIGHT];
+
+	string left_shoulder_frame = (tracking_type == TRACKING_NUITRACK) ? nui_joint_names[joint_left_shoulder] : kinect_joint_names[SHOULDERLEFT];
+	string left_elbow_frame = (tracking_type == TRACKING_NUITRACK) ? nui_joint_names[joint_left_elbow] : kinect_joint_names[ELBOWLEFT];
+	string left_hand_frame = (tracking_type == TRACKING_NUITRACK) ? nui_joint_names[joint_left_hand] : kinect_joint_names[WRISTLEFT];
+
+
 	tf2_ros::Buffer tfBuffer;
 	tf2_ros::TransformListener tfListener(tfBuffer);
 	ros::Rate r(10);
@@ -66,15 +85,15 @@ int main(int argc, char *argv[])
 		{
 			ros::Time t = ros::Time(0);
 
-			tf2::Transform leftShoulder = fromMsg(tfBuffer.lookupTransform(joint_names[global], joint_names[joint_left_shoulder], t, ros::Duration(0.1)).transform);
-			tf2::Transform leftElbow = fromMsg(tfBuffer.lookupTransform(joint_names[global], joint_names[joint_left_elbow], t, ros::Duration(0.1)).transform);
-			tf2::Transform leftHand = fromMsg(tfBuffer.lookupTransform(joint_names[global], joint_names[joint_left_hand], t, ros::Duration(0.1)).transform);
+			tf2::Transform leftShoulder = fromMsg(tfBuffer.lookupTransform(camera_frame, left_shoulder_frame, t, ros::Duration(0.1)).transform);
+			tf2::Transform leftElbow = fromMsg(tfBuffer.lookupTransform(camera_frame, left_elbow_frame, t, ros::Duration(0.1)).transform);
+			tf2::Transform leftHand = fromMsg(tfBuffer.lookupTransform(camera_frame, left_hand_frame, t, ros::Duration(0.1)).transform);
 
-			tf2::Transform rightShoulder = fromMsg(tfBuffer.lookupTransform(joint_names[global], joint_names[joint_right_shoulder], t, ros::Duration(0.1)).transform);
-			tf2::Transform rightElbow = fromMsg(tfBuffer.lookupTransform(joint_names[global], joint_names[joint_right_elbow], t, ros::Duration(0.1)).transform);
-			tf2::Transform rightHand = fromMsg(tfBuffer.lookupTransform(joint_names[global], joint_names[joint_right_hand], t, ros::Duration(0.1)).transform);
+			tf2::Transform rightShoulder = fromMsg(tfBuffer.lookupTransform(camera_frame, right_shoulder_frame, t, ros::Duration(0.1)).transform);
+			tf2::Transform rightElbow = fromMsg(tfBuffer.lookupTransform(camera_frame, right_elbow_frame, t, ros::Duration(0.1)).transform);
+			tf2::Transform rightHand = fromMsg(tfBuffer.lookupTransform(camera_frame, right_hand_frame, t, ros::Duration(0.1)).transform);
 			
-			tf2::Transform waist = fromMsg(tfBuffer.lookupTransform(joint_names[global], joint_names[joint_waist], t, ros::Duration(0.1)).transform);		
+			tf2::Transform waist = fromMsg(tfBuffer.lookupTransform(camera_frame, waist_frame, t, ros::Duration(0.1)).transform);
 
 			tf2::Vector3 zAxisHelper = waist.getOrigin() - rightShoulder.getOrigin();
 			tf2::Vector3 xAxis = leftShoulder.getOrigin() - rightShoulder.getOrigin();//right to left
@@ -298,9 +317,10 @@ int main(int argc, char *argv[])
 
 			cmd.axles[RightShoulderRoll] = 900 - cmd.axles[RightShoulderRoll];
 
-			// ROS_INFO("RIGHT ANGLES: %03d %03d %03d %03d",cmd.axles[RightShoulderYaw], cmd.axles[RightShoulderPitch], cmd.axles[RightShoulderRoll], cmd.axles[RightElbow]);
+			ROS_INFO("RIGHT ANGLES: %03d %03d %03d %03d",cmd.axles[RightShoulderYaw], cmd.axles[RightShoulderPitch], cmd.axles[RightShoulderRoll], cmd.axles[RightElbow]);
 			
-			
+			cmd.header.stamp = ros::Time::now();
+			cmd.header.seq++;
 			axlCmdPub.publish(cmd);
 			r.sleep();
 		}
