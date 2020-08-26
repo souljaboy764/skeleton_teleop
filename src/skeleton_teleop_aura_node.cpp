@@ -277,10 +277,7 @@ int main(int argc, char *argv[])
 			r1 = tf2::tf2Distance(rightUnderArm, rightShouldBeWristPos);
 			// l1 = sqrt((rightUnderArm.x() - rightShouldBeWristPos.x())*(rightUnderArm.x() - rightShouldBeWristPos.x()) + (rightUnderArm.y() - rightShouldBeWristPos.y())*(rightUnderArm.y() - rightShouldBeWristPos.y()) + (rightUnderArm.z() - rightShouldBeWristPos.z())*(rightUnderArm.z() - rightShouldBeWristPos.z()));
 			if (r1 < r1saver)
-			{
-				ROS_INFO("GOING HERE");
 				rightRoll = -rightRoll;
-			}
 			
 			//As there are some singularities or inaccessible areas in the kinematic structure, 
 			//this smoothes these areas out or removes them 
