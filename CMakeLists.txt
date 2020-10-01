@@ -144,7 +144,7 @@ include_directories(
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
 add_executable(${PROJECT_NAME}_aura_node src/skeleton_teleop_aura_node.cpp)
-add_executable(${PROJECT_NAME}_moveit_node src/skeleton_teleop_moveit_node.cpp)
+add_executable(${PROJECT_NAME}_peppermoveit_node src/skeleton_teleop_peppermoveit_node.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -156,13 +156,13 @@ add_executable(${PROJECT_NAME}_moveit_node src/skeleton_teleop_moveit_node.cpp)
 ## Add cmake target dependencies of the executable
 ## same as for the library above
 add_dependencies(${PROJECT_NAME}_aura_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-add_dependencies(${PROJECT_NAME}_moveit_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(${PROJECT_NAME}_peppermoveit_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(${PROJECT_NAME}_aura_node
    ${catkin_LIBRARIES}
 )
-target_link_libraries(${PROJECT_NAME}_moveit_node
+target_link_libraries(${PROJECT_NAME}_peppermoveit_node
    ${catkin_LIBRARIES}
 )
 

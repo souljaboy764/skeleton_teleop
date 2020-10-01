@@ -66,7 +66,7 @@ int main(int argc, char *argv[])
 	ros::Publisher pub = nh.advertise<moveit_msgs::DisplayRobotState>("tutorial_robot_state", 5);
 
 	// Initialize Moveit Interfaces
-	static const std::string PLANNING_GROUP = "right_arm";
+	static const std::string PLANNING_GROUP = "both_arms";
 	moveit::planning_interface::MoveGroupInterface move_group(PLANNING_GROUP);
 	ROS_INFO("CREATED MOVE");
 	move_group.getCurrentState(5);
@@ -103,10 +103,10 @@ int main(int argc, char *argv[])
 			
 			tf2::Transform waist = fromMsg(tfBuffer.lookupTransform(camera_frame, waist_frame, t, ros::Duration(0.1)).transform);
 
-			tf2::Vector3 zAxisHelper = waist.getOrigin() - rightShoulder.getOrigin();
-			tf2::Vector3 xAxis = leftShoulder.getOrigin() - rightShoulder.getOrigin();//right to left
-			tf2::Vector3 zAxis = tf2::tf2Cross(zAxisHelper, xAxis);//out of the human(like an arrow in the back)
-			tf2::Vector3 yAxis = tf2::tf2Cross(zAxis, xAxis);//like spine, but straight
+			tf2::Vector3 xAxisHelper = waist.getOrigin() - rightShoulder.getOrigin();
+			tf2::Vector3 yAxis = leftShoulder.getOrigin() - rightShoulder.getOrigin();//right to left
+			tf2::Vector3 xAxis = tf2::tf2Cross(xAxisHelper, yAxis);//out of the human(like an arrow in the back)
+			tf2::Vector3 zAxis = tf2::tf2Cross(xAxis, yAxis);//like spine, but straight
 			//Coordinate System in the room
 			tf2::Vector3 gravity = tf2::Vector3(0, 1, 0);
 			tf2::Vector3 groundX = tf2::Vector3(-1, 0, 0);
@@ -171,65 +171,40 @@ int main(int argc, char *argv[])
 				leftElbowAngle = tf2::tf2Angle(leftUpperArm, leftUnderArm);
 
 				double armlengthLeft = leftUpperArm.length();
-				leftYaw = asin(leftUpperArm.x()/armlengthLeft);//Comes from robot structure
-				leftPitch = atan(leftUpperArm.z()/ -leftUpperArm.y());//Comes from robot structure
-			
-				
-				//Because of the form of the sinus it has to be checked if the angle is bigger than 90°
-				if (tf2::tf2Dot(topView, leftUpperArm) >=0)
-					leftYaw = M_PI - leftYaw;
+				leftYaw = asin(leftUpperArm.y()/armlengthLeft);//Comes from robot structure
+				leftYaw += 0.009;
+				leftPitch = atan2(leftUpperArm.x(), leftUpperArm.z());//Comes from robot structure
+				leftPitch -= M_PI/2;
 
 				//Recreating under Arm Position with known Angles(without roll)
-				tf2::Matrix3x3 leftRotationAroundZ;
-				leftRotationAroundZ.setEulerYPR(leftYaw, 0, 0);
+				tf2::Matrix3x3 leftRotationAroundY;
+				leftRotationAroundY.setEulerYPR(0, leftPitch, 0);
 				tf2::Matrix3x3 leftRotationAroundX;
-				leftRotationAroundX.setEulerYPR(0, 0, leftPitch);
+				leftRotationAroundX.setEulerYPR(leftYaw, 0, 0);
 				tf2::Matrix3x3 leftElbowRotation;
-				leftElbowRotation.setEulerYPR(0, 0, -leftElbowAngle);
+				leftElbowRotation.setEulerYPR(leftElbowAngle, 0, 0);
 
 				double underArmlengthLeft = leftUnderArm.length();
-				tf2::Vector3 leftUnderArmInZeroPos(0, -underArmlengthLeft, 0);
-				tf2::Vector3 leftUnderArmWithoutRoll = leftRotationAroundX*(leftRotationAroundZ*(leftElbowRotation*leftUnderArmInZeroPos));
-
+				tf2::Vector3 leftUnderArmInZeroPos(underArmlengthLeft, 0, 0);
+				tf2::Vector3 leftUnderArmWithoutRoll = leftRotationAroundY*(leftRotationAroundX*(leftElbowRotation*leftUnderArmInZeroPos));
 				//calculating the angle betwenn actual under arm position and the one calculated without roll
 				leftRoll = tf2::tf2Angle(leftUnderArmWithoutRoll, leftUnderArm);
 				
 				
 				//This is a check which sign the angle has as the calculation only produces positive angles
 				tf2::Matrix3x3 leftRotationAroundArm;
-				leftRotationAroundArm.setEulerYPR(0, -leftRoll, 0);
-				tf2::Vector3 leftShouldBeWristPos = leftRotationAroundX*(leftRotationAroundZ*(leftRotationAroundArm*(leftElbowRotation*leftUnderArmInZeroPos)));
+				leftRotationAroundArm.setEulerYPR(0, 0, -leftRoll);
+				tf2::Vector3 leftShouldBeWristPos = leftRotationAroundY*(leftRotationAroundX*(leftRotationAroundArm*(leftElbowRotation*leftUnderArmInZeroPos)));
+				double l1saver = tf2::tf2Distance(leftUnderArm, leftShouldBeWristPos);
+				
+				leftRotationAroundArm.setEulerYPR(0, 0, leftRoll);
+				leftShouldBeWristPos = leftRotationAroundY*(leftRotationAroundX*(leftRotationAroundArm*(leftElbowRotation*leftUnderArmInZeroPos)));
 				double l1 = tf2::tf2Distance(leftUnderArm, leftShouldBeWristPos);
-				// double l1 = sqrt((leftUnderArm.x() - leftShouldBeWristPos.x())*(leftUnderArm.x() - leftShouldBeWristPos.x()) + (leftUnderArm.y() - leftShouldBeWristPos.y())*(leftUnderArm.y() - leftShouldBeWristPos.y()) + (leftUnderArm.z() - leftShouldBeWristPos.z())*(leftUnderArm.z() - leftShouldBeWristPos.z()));
-				double l1saver = l1;
-				leftRotationAroundArm.setEulerYPR(0, leftRoll, 0);
-				leftShouldBeWristPos = leftRotationAroundX*(leftRotationAroundZ*(leftRotationAroundArm*(leftElbowRotation*leftUnderArmInZeroPos)));
-				l1 = tf2::tf2Distance(leftUnderArm, leftShouldBeWristPos);
-				// l1 = sqrt((leftUnderArm.x() - leftShouldBeWristPos.x())*(leftUnderArm.x() - leftShouldBeWristPos.x()) + (leftUnderArm.y() - leftShouldBeWristPos.y())*(leftUnderArm.y() - leftShouldBeWristPos.y()) + (leftUnderArm.z() - leftShouldBeWristPos.z())*(leftUnderArm.z() - leftShouldBeWristPos.z()));
-				if (l1 < l1saver)
+				
+				if (l1 > l1saver)
 					leftRoll = -leftRoll;
 				
-				//As there are some singularities or inaccessible areas in the kinematic structure, 
-				//this smoothes these areas out or removes them 
-				leftYaw *= 180/M_PI;
-				leftPitch *= 180/M_PI;
-				
-				if (tf2::tf2Dot(topView, leftUpperArm) >=0)
-				{
-					leftYaw = 180 - leftYaw;	
-					if ((leftPitch > 15 && leftPitch < 90)|| (leftPitch < -15 && leftPitch > -90) || leftPitch >165 || leftPitch < -165) 
-						leftPitch = -90;
-					
-					else
-					{
-						double comparer = abs(leftPitch);
-						if (comparer > 165) comparer = -comparer + 180;
-						leftPitch = -comparer/15*90;
-					}
-				}
-
-				leftYaw *= M_PI/180;
-				leftPitch *= M_PI/180;
+				leftElbowAngle = clamp(leftElbowAngle, 0.009, 1.562);
 			}
 
 			if(!PLANNING_GROUP.compare("both_arms") or !PLANNING_GROUP.compare("right_arm"))
@@ -246,75 +221,41 @@ int main(int argc, char *argv[])
 				rightElbowAngle = tf2::tf2Angle(rightUpperArm, rightUnderArm);
 
 				double armlengthRight = rightUpperArm.length();
-				rightYaw = asin(-rightUpperArm.x()/armlengthRight);//Comes from robot structure
-				rightPitch = atan(rightUpperArm.z()/ -rightUpperArm.y());//Comes from robot structure
-			
+				rightYaw = asin(rightUpperArm.y()/armlengthRight);//Comes from robot structure
+				rightYaw -= 0.009;
+				rightPitch = atan2(rightUpperArm.x(), rightUpperArm.z());//Comes from robot structure
+				rightPitch -= M_PI/2;
 				
-				//Because of the form of the sinus it has to be checked if the angle is bigger than 90°
-				if (tf2::tf2Dot(topView, rightUpperArm) >=0)
-					rightYaw = M_PI - rightYaw;
-
 				//Recreating under Arm Position with known Angles(without roll)
-				tf2::Matrix3x3 rightRotationAroundZ;
-				rightRotationAroundZ.setEulerYPR(-rightYaw, 0, 0);
+				tf2::Matrix3x3 rightRotationAroundY;
+				rightRotationAroundY.setEulerYPR(0, rightPitch, 0);
 				tf2::Matrix3x3 rightRotationAroundX;
-				rightRotationAroundX.setEulerYPR(0, 0, rightPitch);
+				rightRotationAroundX.setEulerYPR(rightYaw, 0, 0);
 				tf2::Matrix3x3 rightElbowRotation;
-				rightElbowRotation.setEulerYPR(0, 0, -rightElbowAngle);
+				rightElbowRotation.setEulerYPR(rightElbowAngle, 0, 0);
 
 				double underArmlengthRight = rightUnderArm.length();
-				tf2::Vector3 rightUnderArmInZeroPos(0, -underArmlengthRight, 0);
-				tf2::Vector3 rightUnderArmWithoutRoll = rightRotationAroundX*(rightRotationAroundZ*(rightElbowRotation*rightUnderArmInZeroPos));
-
+				tf2::Vector3 rightUnderArmInZeroPos(underArmlengthRight,0, 0);
+				tf2::Vector3 rightUnderArmWithoutRoll = rightRotationAroundY*(rightRotationAroundX*(rightElbowRotation*rightUnderArmInZeroPos));
 				//calculating the angle betwenn actual under arm position and the one calculated without roll
 				rightRoll = tf2::tf2Angle(rightUnderArmWithoutRoll, rightUnderArm);
 				
 				
 				//This is a check which sign the angle has as the calculation only produces positive angles
 				tf2::Matrix3x3 rightRotationAroundArm;
-				rightRotationAroundArm.setEulerYPR(0, -rightRoll, 0);
-				tf2::Vector3 rightShouldBeWristPos = rightRotationAroundX*(rightRotationAroundZ*(rightRotationAroundArm*(rightElbowRotation*rightUnderArmInZeroPos)));
+				rightRotationAroundArm.setEulerYPR(0, 0, -rightRoll);
+				tf2::Vector3 rightShouldBeWristPos = rightRotationAroundY*(rightRotationAroundX*(rightRotationAroundArm*(rightElbowRotation*rightUnderArmInZeroPos)));
+				double r1saver = tf2::tf2Distance(rightUnderArm, rightShouldBeWristPos);
+				
+				rightRotationAroundArm.setEulerYPR(0, 0, rightRoll);
+				rightShouldBeWristPos = rightRotationAroundY*(rightRotationAroundX*(rightRotationAroundArm*(rightElbowRotation*rightUnderArmInZeroPos)));
 				double r1 = tf2::tf2Distance(rightUnderArm, rightShouldBeWristPos);
-				// double l1 = sqrt((rightUnderArm.x() - rightShouldBeWristPos.x())*(rightUnderArm.x() - rightShouldBeWristPos.x()) + (rightUnderArm.y() - rightShouldBeWristPos.y())*(rightUnderArm.y() - rightShouldBeWristPos.y()) + (rightUnderArm.z() - rightShouldBeWristPos.z())*(rightUnderArm.z() - rightShouldBeWristPos.z()));
-				double r1saver = r1;
-				rightRotationAroundArm.setEulerYPR(0, rightRoll, 0);
-				rightShouldBeWristPos = rightRotationAroundX*(rightRotationAroundZ*(rightRotationAroundArm*(rightElbowRotation*rightUnderArmInZeroPos)));
-				r1 = tf2::tf2Distance(rightUnderArm, rightShouldBeWristPos);
-				// l1 = sqrt((rightUnderArm.x() - rightShouldBeWristPos.x())*(rightUnderArm.x() - rightShouldBeWristPos.x()) + (rightUnderArm.y() - rightShouldBeWristPos.y())*(rightUnderArm.y() - rightShouldBeWristPos.y()) + (rightUnderArm.z() - rightShouldBeWristPos.z())*(rightUnderArm.z() - rightShouldBeWristPos.z()));
-				if (r1 < r1saver)
+				
+				if (r1 > r1saver)
 					rightRoll = -rightRoll;
 				
-				//As there are some singularities or inaccessible areas in the kinematic structure, 
-				//this smoothes these areas out or removes them 
-				rightYaw *= 180/M_PI;
-				rightPitch *= 180/M_PI;
-				// rightRoll += M_PI/2.;
-				
-
-				if (tf2::tf2Dot(topView, rightUpperArm) >=0)
-				{
-					rightYaw = 180 - rightYaw;	
-					if ((rightPitch > 15 && rightPitch < 90)|| (rightPitch < -15 && rightPitch > -90) || rightPitch >165 || rightPitch < -165) 
-						rightPitch = -90;
-					
-					else
-					{
-						double comparer = abs(rightPitch);
-						if (comparer > 165) comparer = -comparer + 180;
-						rightPitch = -comparer/15*90;
-					}
-				}
-
-				rightYaw *= M_PI/180;
-				rightPitch *= M_PI/180;
-				// rightRoll = M_PI/2. - rightRoll;
-
-				rightYaw *= -1; rightYaw -= 0.009;
-				rightPitch *= -1; rightPitch += M_PI/2;
-				// rightRoll *= -1; 
-				rightRoll -= M_PI;
-				// rightRoll = 0;
 				rightElbowAngle = clamp(rightElbowAngle, 0.009, 1.562);
+				
 			}
 
 			if(!PLANNING_GROUP.compare("both_arms")) 
