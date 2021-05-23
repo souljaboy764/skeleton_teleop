@@ -29,11 +29,6 @@ enum {Root, Hips, LeftThigh, LeftShin, LeftFoot, LeftToe,LeftToeTip, RightThigh,
 vector<string> butepage_joint_names({"Root", "Hips", "LeftThigh", "LeftShin", "LeftFoot", "LeftToe", "LeftToeTip", "RightThigh", "RightShin", "RightFoot", "RightToe","RightToeTip", "Spine1", "Spine2", "Spine3", "Spine4","LeftShoulder", "LeftArm", "LeftForeArm", "LeftHand", "Neck","Head", "RightShoulder", "RightArm", "RightForeArm", "RightHand"});
 
 
-
-
-enum {LeftShoulderPitch=23, LeftShoulderYaw, LeftShoulderRoll, LeftElbow, RightShoulderPitch=37, RightShoulderYaw, RightShoulderRoll, RightElbow};
-
-
 void euler_from_quaternion(geometry_msgs::Quaternion q, double &yaw, double &pitch, double &roll)
 {
 	// roll (x-axis rotation)

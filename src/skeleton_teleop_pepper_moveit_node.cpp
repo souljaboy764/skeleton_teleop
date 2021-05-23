@@ -40,7 +40,7 @@ using namespace std;
 
 int main(int argc, char *argv[])
 {
-	ros::init(argc, argv, "skeleton_teleop");
+	ros::init(argc, argv, "pepper_moveit_cppnode");
 	ros::NodeHandle nh;
 	ros::AsyncSpinner spinner(1); 
 	spinner.start();
@@ -86,8 +86,8 @@ int main(int argc, char *argv[])
 	if(argc>2)
 		PLANNING_GROUP = string(argv[2]);
 	moveit::planning_interface::MoveGroupInterface move_group(PLANNING_GROUP);
-	ROS_INFO("CREATED MOVE");
-	move_group.getCurrentState(5);
+	ROS_INFO("CREATED MOVEGROUP");
+	
 	ROS_INFO("GETTING JOINTS");
 	const moveit::core::JointModelGroup* joint_model_group = move_group.getCurrentState()->getJointModelGroup(PLANNING_GROUP);
 
@@ -140,10 +140,6 @@ int main(int argc, char *argv[])
 
 			tf2::Transform transformationMatrixTF2(transformationMatrix);																 
 			
-			gravity = transformationMatrix*gravity;
-			groundX = transformationMatrix*groundX;
-			groundZ = transformationMatrix*groundZ;
-
 			leftShoulder = transformationMatrixTF2*leftShoulder;
 			leftElbow = transformationMatrixTF2*leftElbow;
 			leftHand = transformationMatrixTF2*leftHand;
@@ -158,13 +154,6 @@ int main(int argc, char *argv[])
 			xAxis = tf2::Vector3(1, 0, 0);
 			yAxis = tf2::Vector3(0, 1, 0);
 			zAxis = tf2::Vector3(0, 0, 1);
-
-			//create help planes
-			tf2::Vector3 frontView = tf2::tf2Cross(xAxis, yAxis);//Plain for front view: normal is zAxis
-			tf2::Vector3 sideView = tf2::tf2Cross(yAxis, zAxis);//Plain for side view: normal is xAxis
-			tf2::Vector3 topView = tf2::tf2Cross(zAxis, xAxis);//Plain for top view: normal is yAxis
-
-			tf2::Vector3 ground = tf2::tf2Cross(groundZ, groundX);
 
 			double leftYaw = 0;
 			double leftPitch = 0;
@@ -258,14 +247,13 @@ int main(int argc, char *argv[])
 				//calculating the angle betwenn actual under arm position and the one calculated without roll
 				rightRoll = tf2::tf2Angle(rightUnderArmWithoutRoll, rightUnderArm);
 				
-				
 				//This is a check which sign the angle has as the calculation only produces positive angles
 				tf2::Matrix3x3 rightRotationAroundArm;
-				rightRotationAroundArm.setEulerYPR(0, -0.157079, -rightRoll);
+				rightRotationAroundArm.setEulerYPR(0, 0, -rightRoll);
 				tf2::Vector3 rightShouldBeWristPos = rightRotationAroundY*(rightRotationAroundX*(rightRotationAroundArm*(rightElbowRotation*rightUnderArmInZeroPos)));
 				double r1saver = tf2::tf2Distance(rightUnderArm, rightShouldBeWristPos);
 				
-				rightRotationAroundArm.setEulerYPR(0, -0.157079, rightRoll);
+				rightRotationAroundArm.setEulerYPR(0, 0, rightRoll);
 				rightShouldBeWristPos = rightRotationAroundY*(rightRotationAroundX*(rightRotationAroundArm*(rightElbowRotation*rightUnderArmInZeroPos)));
 				double r1 = tf2::tf2Distance(rightUnderArm, rightShouldBeWristPos);
 				
@@ -304,7 +292,6 @@ int main(int argc, char *argv[])
 
 			msg.state.joint_state.position = joint_group_positions;
 			pub.publish(msg);
-						
 			r.sleep();
 		}
 		catch (tf2::TransformException &ex) 
