@@ -8,7 +8,6 @@ add_compile_options(-std=c++11 -g)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
-  aura_msgs
   geometry_msgs
   moveit_msgs
   moveit_core
@@ -115,7 +114,7 @@ find_package(catkin REQUIRED COMPONENTS
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES skeleton_teleop
-   CATKIN_DEPENDS aura_msgs geometry_msgs roscpp rospy std_msgs tf tf2_msgs
+   CATKIN_DEPENDS geometry_msgs roscpp rospy std_msgs tf tf2_msgs
 #  DEPENDS system_lib
 )
 
@@ -143,8 +142,7 @@ include_directories(
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-add_executable(${PROJECT_NAME}_aura_node src/skeleton_teleop_aura_node.cpp)
-add_executable(${PROJECT_NAME}_peppermoveit_node src/skeleton_teleop_peppermoveit_node.cpp)
+add_executable(${PROJECT_NAME}_pepper_moveit_node src/skeleton_teleop_pepper_moveit_node.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -155,14 +153,10 @@ add_executable(${PROJECT_NAME}_peppermoveit_node src/skeleton_teleop_peppermovei
 
 ## Add cmake target dependencies of the executable
 ## same as for the library above
-add_dependencies(${PROJECT_NAME}_aura_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-add_dependencies(${PROJECT_NAME}_peppermoveit_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(${PROJECT_NAME}_pepper_moveit_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
-target_link_libraries(${PROJECT_NAME}_aura_node
-   ${catkin_LIBRARIES}
-)
-target_link_libraries(${PROJECT_NAME}_peppermoveit_node
+target_link_libraries(${PROJECT_NAME}_pepper_moveit_node
    ${catkin_LIBRARIES}
 )
 

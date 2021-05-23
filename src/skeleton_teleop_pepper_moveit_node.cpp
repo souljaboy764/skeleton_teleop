@@ -45,28 +45,46 @@ int main(int argc, char *argv[])
 	ros::AsyncSpinner spinner(1); 
 	spinner.start();
 	
-	int tracking_type = TRACKING_NUITRACK;
+	string prefix, camera_frame, waist_frame, right_shoulder_frame, right_elbow_frame, right_hand_frame, left_shoulder_frame, left_elbow_frame, left_hand_frame;
 
-	// Set the frame_id of the required tfs according to nuitrack or kinect tracking
-	if(argc==2 and string(argv[1])=="kinect")
-		tracking_type = TRACKING_KINECT;
-	string prefix = (tracking_type == TRACKING_NUITRACK) ? "perception_nui_1_1_" : "nturgbd_skeleton_1_";
-	string camera_frame = (tracking_type == TRACKING_NUITRACK) ? nui_joint_names[camera] : kinect_joint_names[CAMERA];
+	if(argc>1 and string(argv[1])=="kinect")
+	{
+		prefix = "nturgbd_skeleton_1_";
+		camera_frame = kinect_joint_names[CAMERA];
 
-	string waist_frame = prefix + ((tracking_type == TRACKING_NUITRACK) ? nui_joint_names[joint_waist] : kinect_joint_names[SPINEBASE]);
+		waist_frame = prefix + kinect_joint_names[SPINEBASE];
 
-	string right_shoulder_frame = prefix + ((tracking_type == TRACKING_NUITRACK) ? nui_joint_names[joint_right_shoulder] : kinect_joint_names[SHOULDERRIGHT]);
-	string right_elbow_frame = prefix + ((tracking_type == TRACKING_NUITRACK) ? nui_joint_names[joint_right_elbow] : kinect_joint_names[ELBOWRIGHT]);
-	string right_hand_frame = prefix + ((tracking_type == TRACKING_NUITRACK) ? nui_joint_names[joint_right_hand] : kinect_joint_names[WRISTRIGHT]);
+		right_shoulder_frame = prefix + kinect_joint_names[SHOULDERRIGHT];
+		right_elbow_frame = prefix + kinect_joint_names[ELBOWRIGHT];
+		right_hand_frame = prefix + kinect_joint_names[WRISTRIGHT];
 
-	string left_shoulder_frame = prefix + ((tracking_type == TRACKING_NUITRACK) ? nui_joint_names[joint_left_shoulder] : kinect_joint_names[SHOULDERLEFT]);
-	string left_elbow_frame = prefix + ((tracking_type == TRACKING_NUITRACK) ? nui_joint_names[joint_left_elbow] : kinect_joint_names[ELBOWLEFT]);
-	string left_hand_frame = prefix + ((tracking_type == TRACKING_NUITRACK) ? nui_joint_names[joint_left_hand] : kinect_joint_names[WRISTLEFT]);
+		left_shoulder_frame = prefix + kinect_joint_names[SHOULDERLEFT];
+		left_elbow_frame = prefix + kinect_joint_names[ELBOWLEFT];
+		left_hand_frame = prefix + kinect_joint_names[WRISTLEFT];
+	}
+	else if(argc>1 and string(argv[1])=="butepage")
+	{
+		prefix = "butepage_skeleton_1_";
+		camera_frame = "base_footprint";
 
-	ros::Publisher pub = nh.advertise<moveit_msgs::DisplayRobotState>("tutorial_robot_state", 5);
+		waist_frame = prefix + butepage_joint_names[Hips];
+
+		right_shoulder_frame = prefix + butepage_joint_names[RightArm];
+		right_elbow_frame = prefix + butepage_joint_names[RightForeArm];
+		right_hand_frame = prefix + butepage_joint_names[RightHand];
+
+		left_shoulder_frame = prefix + butepage_joint_names[LeftArm];
+		left_elbow_frame = prefix + butepage_joint_names[LeftForeArm];
+		left_hand_frame = prefix + butepage_joint_names[LeftHand];
+	}
+
+	
+	ros::Publisher pub = nh.advertise<moveit_msgs::DisplayRobotState>("display_robot_state", 5);
 
 	// Initialize Moveit Interfaces
-	static const std::string PLANNING_GROUP = "both_arms";
+	std::string PLANNING_GROUP = "right_arm";
+	if(argc>2)
+		PLANNING_GROUP = string(argv[2]);
 	moveit::planning_interface::MoveGroupInterface move_group(PLANNING_GROUP);
 	ROS_INFO("CREATED MOVE");
 	move_group.getCurrentState(5);
@@ -221,8 +239,8 @@ int main(int argc, char *argv[])
 				rightElbowAngle = tf2::tf2Angle(rightUpperArm, rightUnderArm);
 
 				double armlengthRight = rightUpperArm.length();
-				rightYaw = asin(rightUpperArm.y()/armlengthRight);//Comes from robot structure
-				rightYaw -= 0.009;
+				rightYaw = atan2(rightUpperArm.y(),-rightUpperArm.z());//Comes from robot structure
+				// rightYaw -= 0.009;
 				rightPitch = atan2(rightUpperArm.x(), rightUpperArm.z());//Comes from robot structure
 				rightPitch -= M_PI/2;
 				
@@ -243,18 +261,18 @@ int main(int argc, char *argv[])
 				
 				//This is a check which sign the angle has as the calculation only produces positive angles
 				tf2::Matrix3x3 rightRotationAroundArm;
-				rightRotationAroundArm.setEulerYPR(0, 0, -rightRoll);
+				rightRotationAroundArm.setEulerYPR(0, -0.157079, -rightRoll);
 				tf2::Vector3 rightShouldBeWristPos = rightRotationAroundY*(rightRotationAroundX*(rightRotationAroundArm*(rightElbowRotation*rightUnderArmInZeroPos)));
 				double r1saver = tf2::tf2Distance(rightUnderArm, rightShouldBeWristPos);
 				
-				rightRotationAroundArm.setEulerYPR(0, 0, rightRoll);
+				rightRotationAroundArm.setEulerYPR(0, -0.157079, rightRoll);
 				rightShouldBeWristPos = rightRotationAroundY*(rightRotationAroundX*(rightRotationAroundArm*(rightElbowRotation*rightUnderArmInZeroPos)));
 				double r1 = tf2::tf2Distance(rightUnderArm, rightShouldBeWristPos);
 				
 				if (r1 > r1saver)
 					rightRoll = -rightRoll;
 				
-				rightElbowAngle = clamp(rightElbowAngle, 0.009, 1.562);
+				// rightElbowAngle = clamp(rightElbowAngle, 0.009, 1.562);
 				
 			}
 
@@ -286,29 +304,7 @@ int main(int argc, char *argv[])
 
 			msg.state.joint_state.position = joint_group_positions;
 			pub.publish(msg);
-			
-			// msg.trajectory_start.joint_state.header.stamp = ros::Time::now();
-
-			// move_group.setJointValueTarget(joint_group_positions);
-
-			// move_group.setMaxVelocityScalingFactor(1);
-			// move_group.setMaxAccelerationScalingFactor(1);
-			// move_group.move();
-			// moveit::planning_interface::MoveGroupInterface::Plan my_plan;
-			// bool success = (move_group.plan(my_plan) == moveit::planning_interface::MoveItErrorCode::SUCCESS);
-			// ROS_INFO_NAMED("tutorial", "Visualizing plan 2 (joint space goal) %s", success ? "" : "FAILED");
-
-			// // Visualize the plan in RViz
-			// Eigen::Isometry3d text_pose = Eigen::Isometry3d::Identity();
-  			// text_pose.translation().z() = 1.75;
-			// moveit_visual_tools::MoveItVisualTools visual_tools("base_footprint");
-			// visual_tools.deleteAllMarkers();
-			// visual_tools.publishText(text_pose, "Joint Space Goal", rviz_visual_tools::WHITE, rviz_visual_tools::XLARGE);
-			// visual_tools.publishTrajectoryLine(my_plan.trajectory_, joint_model_group);
-			// visual_tools.trigger();
-			// visual_tools.prompt("Press 'next' in the RvizVisualToolsGui window to continue the demo");
-
-			
+						
 			r.sleep();
 		}
 		catch (tf2::TransformException &ex) 
