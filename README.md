@@ -18,6 +18,7 @@ https://github.com/souljaboy764/human_robot_interaction_data
 ### TODO:
 - Add a node integrated with NAOqi
 - Integrate Robot control with MoveIt/NAOqi
+- Debug C++ node
 
 ## Acknowledgements
 This code is adapted for pepper from the code at https://github.com/robertocalandra/firstperson-teleoperation

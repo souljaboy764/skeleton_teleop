@@ -201,55 +201,50 @@ while not rospy.is_shutdown():
 			rightUpperArm = rightElbow - rightShoulder
 			rightUnderArm = rightHand - rightElbow
 
-			rightElbowAngle = angle(rightUpperArm, rightUnderArm)
+			RElbowRoll = angle(rightUpperArm, rightUnderArm)
 
 			armlengthRight = np.linalg.norm(rightUpperArm)
-			rightYaw = np.arctan2(rightUpperArm[1],-rightUpperArm[2]) # Comes from robot structure
-			# rightYaw -= 0.009
-			rightPitch = np.arctan2(rightUpperArm[0], rightUpperArm[2]) # Comes from robot structure
-			rightPitch -= np.pi/2
+			
+			rightUpperArm[1] = np.clip(rightUpperArm[1], -armlengthRight, 0.0) # limiting based on the robot structure
+			RShoulderRoll = np.pi/2 - np.arccos(rightUpperArm[1]/armlengthRight)
+			RShoulderRoll = np.arctan2(np.sin(RShoulderRoll), np.cos(RShoulderRoll))
+
+			RShoulderPitch = np.arctan2(rightUpperArm[0], rightUpperArm[2]) # Comes from robot structure
+			RShoulderPitch -= np.pi/2
+			RShoulderPitch = np.arctan2(np.sin(RShoulderPitch), np.cos(RShoulderPitch))
 			
 			# Recreating under Arm Position with known Angles(without roll)
-			rightRotationAroundY = euler_matrix(0, rightPitch, 0,)[:3,:3]
-			rightRotationAroundX = euler_matrix(0, 0, rightYaw)[:3,:3]
-			rightElbowRotation = euler_matrix(0, 0, rightElbowAngle)[:3,:3]
+			rightRotationAroundY = euler_matrix(0, RShoulderPitch, 0,)[:3,:3]
+			rightRotationAroundZ = euler_matrix(0, 0, RShoulderRoll)[:3,:3]
+			rightElbowRotation = euler_matrix(0, 0, RElbowRoll)[:3,:3]
 
 			rightUnderArmInZeroPos = np.array([np.linalg.norm(rightUnderArm), 0, 0.])
-			rightUnderArmWithoutRoll = np.dot(rightRotationAroundY,np.dot(rightRotationAroundX,np.dot(rightElbowRotation,rightUnderArmInZeroPos)))
+			rightUnderArmWithoutRoll = np.dot(rightRotationAroundY,np.dot(rightRotationAroundZ,np.dot(rightElbowRotation,rightUnderArmInZeroPos)))
 
 			# Calculating the angle betwenn actual under arm position and the one calculated without roll
-			rightRoll = angle(rightUnderArmWithoutRoll, rightUnderArm)
-			
-			#This is a check which sign the angle has as the calculation only produces positive angles
-			rightRotationAroundArm = euler_matrix(0, 0, -rightRoll,'szyx')[:3, :3]
-			rightShouldBeWristPos = np.dot(rightRotationAroundY,np.dot(rightRotationAroundX,np.dot(rightRotationAroundArm,np.dot(rightElbowRotation,rightUnderArmInZeroPos))))
-			r1saver = np.linalg.norm(rightUnderArm - rightShouldBeWristPos)
-			
-			rightRotationAroundArm = euler_matrix(0, 0, rightRoll,'szyx')[:3, :3]
-			rightShouldBeWristPos = np.dot(rightRotationAroundY,np.dot(rightRotationAroundX,np.dot(rightRotationAroundArm,np.dot(rightElbowRotation,rightUnderArmInZeroPos))))
-			r1 = np.linalg.norm(rightUnderArm - rightShouldBeWristPos)
-			
-			if (r1 > r1saver):
-				rightRoll = -rightRoll
-			
-			rightElbowAngle = np.clip(rightElbowAngle, 0.009, 1.562)
-			
+			RElbowYaw = angle(rightUnderArmWithoutRoll, rightUnderArm)
+			RElbowYaw = np.arctan2(np.sin(RElbowYaw), np.cos(RElbowYaw))
+
+			RShoulderPitch = np.clip(RShoulderPitch, -2.0857, 2.0857)
+			RShoulderRoll = np.clip(RShoulderRoll, -1.5621, -0.009)
+			RElbowYaw = np.clip(RElbowYaw, -2.0857, 2.0857)
+			RElbowRoll = np.clip(RElbowRoll, 0.009, 1.5621)
 
 		if PLANNING_GROUP =="both_arms":
 			joint_group_positions[0] = leftPitch
 			joint_group_positions[1] = leftYaw
 			joint_group_positions[2] = leftRoll
 			joint_group_positions[3] = leftElbowAngle
-			joint_group_positions[5] = rightPitch
-			joint_group_positions[6] = rightYaw
-			joint_group_positions[7] = rightRoll
-			joint_group_positions[8] = rightElbowAngle
+			joint_group_positions[5] = RShoulderPitch
+			joint_group_positions[6] = RShoulderRoll
+			joint_group_positions[7] = RElbowYaw
+			joint_group_positions[8] = RElbowRoll
 		
 		elif PLANNING_GROUP == "right_arm":
-			joint_group_positions[0] = rightPitch
-			joint_group_positions[1] = rightYaw
-			joint_group_positions[2] = rightRoll
-			joint_group_positions[3] = rightElbowAngle
+			joint_group_positions[0] = RShoulderPitch
+			joint_group_positions[1] = RShoulderRoll
+			joint_group_positions[2] = RElbowYaw
+			joint_group_positions[3] = RElbowRoll
 		
 		elif PLANNING_GROUP == "left_arm":
 			joint_group_positions[0] = leftPitch
